@@ -1,0 +1,335 @@
+<!doctype html>
+<html>
+<head>
+	<title>Sudoku Solver</title>
+	<style>
+	* {
+		outline: none;
+	}
+	body, canvas, button {
+		display: block;
+		margin: 0;
+		padding: 0;
+	}
+	button {
+		width: 300px;
+		height: 32px;
+		border: 1px solid black;
+		background-color: white;
+	}
+	button:hover {
+		background-color: #EEE;
+	}
+	button:active {
+		background-color: #DDD;
+	}
+	</style>
+	<script>
+		var FPS = 30/1000;
+		var canvas, c, stepHandle;
+		//Array = [x][y]
+		var grid = [],
+			solution = [], 
+			sel = [4, 4];
+		var clearSolution = function() {
+			for(var i = 0; i < 9; i++) {
+				solution[i] = [0,0,0,0,0,0,0,0,0];
+			}
+		};
+		var clearGrid = function() {
+			for(var i = 0; i < 9; i++) {
+				grid[i] = [0,0,0,0,0,0,0,0,0];
+			}
+		};
+		clearGrid();
+		clearSolution();
+		var solve = function(g) {
+			clearSolution();
+			if(g === undefined) {
+				g = [];
+				for(var i = 0; i < 9; i++) {
+					g[i] = [];
+					for(var j = 0; j < 9; j++) {
+						g[i][j] = grid[i][j];
+					}
+				}
+			}
+			for(var i = 0; i < 9; i++) {
+				for(var j = 0; j < 9; j++) {
+					solution[i][j] = g[i][j];
+				}
+			}
+			var changed = false, solved = false;
+			while(!solved) {
+				changed = false;
+				var a;
+				a = solveByTile(solution);
+				if(solution != a) {
+					for(var i = 0; i < 9; i++) {
+						for(var j = 0; j < 9; j++) {
+							solution[i][j] = a[i][j];
+						}
+					}
+					changed = true;
+				}
+				a = solveByRow(solution);
+				if(solution != a) {
+					for(var i = 0; i < 9; i++) {
+						for(var j = 0; j < 9; j++) {
+							solution[i][j] = a[i][j];
+						}
+					}
+					changed = true;
+				}
+				a = solveByColumn(solution);
+				if(solution != a) {
+					for(var i = 0; i < 9; i++) {
+						for(var j = 0; j < 9; j++) {
+							solution[i][j] = a[i][j];
+						}
+					}
+					changed = true;
+				}
+				a = solveBySection(solution);
+				if(solution != a) {
+					for(var i = 0; i < 9; i++) {
+						for(var j = 0; j < 9; j++) {
+							solution[i][j] = a[i][j];
+						}
+					}
+					changed = true;
+				}
+				if(!changed) {
+					return false;
+				}
+				for(var i = 0; i < 9; i++) {
+					for(var j = 0; j < 9; j++) {
+						if(solution[i][j] === 0) {
+							solved = false;
+						}
+					}
+				}
+			}
+			return true;
+		};
+		var checkTile = function(x, y) {
+			var options = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9];
+			for(var i = 0; i < 9; i++) {
+				if(solution[x][i] != 0) {
+					options[solution[x][i]] = 0;
+				}
+				if(solution[i][y] != 0) {
+					options[solution[i][y]] = 0;
+				}
+			}
+			var xx = Math.floor(x / 3), yy = Math.floor(y / 3);
+			for(var i = 0; i <3 /* Pearl ~ */; i++) {
+				for(var j = 0; j < 3; j++) {
+					options[solution[xx * 3 + i][yy * 3 + j]] = 0;
+				}
+			}
+			for(i = 9; i >= 0; i--) {
+				if(options[i] === 0) {
+					options.splice(i, 1);
+				}
+			}
+			return options;
+		};
+		var solveByTile = function(g) {
+			var changed = true;
+			while(changed) {
+				changed = false;
+				for(var i = 0; i < 9; i++) {
+					for(var j = 0; j < 9; j++) {
+						if(g[i][j] === 0) {
+							var options = checkTile(i, j);
+							if(options.length === 1) {
+								g[i][j] = options[0];
+								changed = true;
+							}
+						}
+					}
+				}
+			}
+			return g;
+		};
+		var solveByRow = function(g) {
+			var changed = true;
+			while(changed) {
+				changed = false;
+				for(var y = 0; y < 9; y++) {
+					var row = [];
+					for(var x = 0; x < 9; x++) {
+						row.push(checkTile(x, y));
+					}
+					for(var n = 1; n <= 9; n++) {
+						var xx = 9;
+						for(var x = 0; x < 9; x++) {
+							for(var i = 0; i < row[x].length; i++) {
+								if(row[x][i] == n) {
+									if(xx == 9) {
+										xx = x;
+									} else {
+										xx = 9;
+										break;
+									}
+								}
+							}
+							if(xx == 9) {
+								break;
+							}
+						}
+						if(xx != 9) {
+							if(g[xx][y] === 0) {
+								g[xx][y] = n;
+								changed = true;
+							}
+						}
+					}
+				}
+			}
+			return g;
+		};
+		var solveByColumn = function(g) {
+			var changed = true;
+			while(changed) {
+				changed = false;
+				for(var x = 0; x < 9; x++) {
+					var col = [];
+					for(var y = 0; y < 9; y++) {
+						col.push(checkTile(x, y));
+					}
+					for(var n = 1; n <= 9; n++) {
+						var yy = 9;
+						for(var y = 0; y < 9; y++) {
+							for(var i = 0; i < col[y].length; i++) {
+								if(col[y][i] == n) {
+									if(yy == 9) {
+										yy = y;
+									} else {
+										yy = 9;
+										break;
+									}
+								}
+							}
+							if(yy == 9) {
+								break;
+							}
+						}
+						if(yy != 9) {
+							g[x][yy] = n;
+							changed = true;
+						}
+					}
+				}
+			}
+			return g;
+		};
+		var solveBySection = function(g) {
+			var changed = true;
+			while(changed) {
+				changed = false;
+				for(var x = 0; x < 3; x++) {
+					for(var y = 0; y < 3; y++) {
+						var sec = [];
+						for(var i = 0; i < 3; i++) {
+							sec.push([]);
+							for(var j = 0; j < 3; j++) {
+								sec[i].push(checkTile(x * 3 + i, y * 3 + j));
+							}
+						}
+						for(var n = 1; n <= 9; n++){
+							var xx = 4, yy = 4;
+							for(var i = 0; i < 3; i++) {
+								for(var j = 0; j < 3; j++) {
+									if(sec[i][j] === n) {
+										if(xx === 4) {
+											xx = i;
+											yy = j;
+										} else {
+											xx = 4;
+											break;
+										}
+									}
+								}
+							}
+							if(xx != 4) {
+								g[x * 3 + xx][y * 3 + yy] = n;
+								changed = true;
+							}
+						}
+					}
+				}
+			}
+			return g;
+		};
+		var step = function() {
+			draw();
+		};
+		var draw = function() {
+			c.clearRect(0, 0, 298, 298);
+			c.fillStyle = "black";
+			for(var i = 1; i < 9; i++) {
+				c.fillRect(0, 32 * i - !(i % 3) + i - 1 + Math.floor(i / 3), 300, 1 + 2 * !(i % 3));
+				c.fillRect(32 * i - !(i % 3) + i - 1 + Math.floor(i / 3), 0, 1 + 2 * !(i % 3), 300);
+			}
+			c.font = "28pt monospace";
+			c.textAlign = "center";
+			c.textBaseline = "middle";
+			for(var i = 0; i < 9; i++) {
+				for(var j = 0; j < 9; j++) {
+					if(i == sel[0] && j == sel[1]) {
+						c.fillStyle = "#cff";
+						c.fillRect(32 * i + i + Math.floor(i / 3) + !(i % 3) - (i === 0), 32 * j + j + Math.floor(j / 3) + !(j % 3) - (j === 0), 32 - !(i % 3) + (i === 0), 32 - !(j % 3) + (j === 0));
+						c.fillStyle = "black";
+					}
+					if(grid[i][j] != 0) {
+						c.fillStyle = "black";
+						c.fillText("" + grid[i][j], i * 32 + 16 + i + Math.floor(i/3), j * 32 + 16 + j + Math.floor(i/3));
+					} else if(solution[i][j] != 0) {
+						c.fillStyle = "#999";
+						c.fillText("" + solution[i][j], i * 32 + 16 + i + Math.floor(i/3), j * 32 + 16 + j + Math.floor(i/3));
+					}
+				}
+			}
+		};
+		var autoSolve = false;
+		var toggleAutosolve = function() {
+			autoSolve = !autoSolve;
+			document.getElementById("auto-solve").innerHTML = (autoSolve? "On":"Off");
+		};
+	</script>
+</head>
+<body>
+	<canvas id="sudoku-board" style="border:1px solid black;" width="298" height="298">
+		Your browser does not support the HTML5 canvas
+	</canvas>
+	<button onclick="solve()">Solve!</button>
+	<button onclick="toggleAutosolve()">Toggle auto-solve (<span id="auto-solve">Off</span>)</button>
+	<button onclick="clearGrid();clearSolution()">Clear Board</button>
+	<script>
+		canvas = document.getElementById("sudoku-board");
+		c = canvas.getContext("2d");
+		stepHandle = window.setInterval(step, FPS);
+		window.addEventListener("keydown", function(e) {
+			if(e.keyCode >= "0".charCodeAt(0) && e.keyCode <= "9".charCodeAt(0)) {
+				grid[sel[0]][sel[1]] = e.keyCode - "0".charCodeAt(0);
+				clearSolution();
+				if(autoSolve) {
+					solve();
+				}
+			}
+		});
+		canvas.addEventListener("click", function(e) {
+			sel[0] = 9;
+			while(32 * sel[0] + sel[0] + Math.floor(sel[0] / 3) + !(sel[0] % 3) - (sel[0] === 0) > e.clientX) {
+				sel[0]--;
+			}
+			sel[1] = 9;
+			while(32 * sel[1] + sel[1] + Math.floor(sel[1] / 3) + !(sel[1] % 3) - (sel[1] === 0) > e.clientY) {
+				sel[1]--;
+			}
+		});
+	</script>
+</body>
+</html>
