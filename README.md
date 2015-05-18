@@ -14,3 +14,7 @@ A JavaScript library of various functions to make my math homework a little easi
 == Cat == 
 
 It's a piece of PHP code that I shaped into a cat. Doesn't do a lot, but it does actually run.
+
+== Scribbler ==
+
+Scribbles randomly, with random colours. Can be directed slightly by clicking in the direction you don't want the head to go.
