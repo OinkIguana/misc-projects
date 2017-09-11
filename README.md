@@ -1,7 +1,8 @@
 # misc-projects
-Some small random projects I have. Various different languages.
 
-Nothing really useful or particularly good, but they're just little things that I play with now and then.
+A few random small projects that aren't deserving of a whole repository each
+
+Nothing really useful or particularly good, but they're just little things that I might play with now and then.
 
 == Sudoku Solver ==
 
